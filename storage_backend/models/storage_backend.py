@@ -67,6 +67,7 @@ class StorageBackend(models.Model):
         help="Relative path to the directory to store the file"
     )
     has_validation = fields.Boolean(compute="_compute_has_validation")
+    active = fields.Boolean(default=True)
 
     def _compute_has_validation(self):
         for rec in self:

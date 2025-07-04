@@ -41,6 +41,8 @@ class FileSystemStorageBackend(Component):
     def add(self, relative_path, data, **kwargs):
         full_path = self._fullpath(relative_path)
         dirname = os.path.dirname(full_path)
+        if isinstance(data, str):
+            data = data.encode("utf-8")
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
         with open(full_path, "wb") as my_file:
