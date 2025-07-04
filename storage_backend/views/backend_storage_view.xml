@@ -32,6 +32,7 @@
                     <group name="config">
                         <field name="backend_type" />
                         <field name="directory_path" />
+                        <field name="active" />
                     </group>
                 </sheet>
             </form>
