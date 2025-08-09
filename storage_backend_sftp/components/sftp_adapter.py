@@ -42,16 +42,27 @@ def load_ssh_key(ssh_key_buffer):
 
 @contextmanager
 def sftp(backend):
-    transport = paramiko.Transport((backend.sftp_server, backend.sftp_port))
-    if backend.sftp_auth_method == "pwd":
-        transport.connect(username=backend.sftp_login, password=backend.sftp_password)
-    elif backend.sftp_auth_method == "ssh_key":
-        ssh_key_buffer = StringIO(backend.sftp_ssh_private_key)
-        private_key = load_ssh_key(ssh_key_buffer)
-        transport.connect(username=backend.sftp_login, pkey=private_key)
-    client = paramiko.SFTPClient.from_transport(transport)
-    yield client
-    transport.close()
+    transport = None
+    client = None
+    try:
+        transport = paramiko.Transport((backend.sftp_server, backend.sftp_port))
+        if backend.sftp_auth_method == "pwd":
+            transport.connect(
+                username=backend.sftp_login, password=backend.sftp_password
+            )
+        elif backend.sftp_auth_method == "ssh_key":
+            ssh_key_buffer = StringIO(backend.sftp_ssh_private_key)
+            private_key = load_ssh_key(ssh_key_buffer)
+            transport.connect(username=backend.sftp_login, pkey=private_key)
+        client = paramiko.SFTPClient.from_transport(transport)
+        yield client
+    finally:
+        try:
+            if client:
+                client.close()
+        finally:
+            if transport:
+                transport.close()
 
 
 class SFTPStorageBackendAdapter(Component):
@@ -71,17 +82,14 @@ class SFTPStorageBackendAdapter(Component):
                         sftp_mkdirs(client, dirname)
                     else:
                         raise  # pragma: no cover
-            remote_file = client.open(full_path, "w")
-            remote_file.write(data)
-            remote_file.close()
+            with client.open(full_path, "w") as remote_file:
+                remote_file.write(data)
 
     def get(self, relative_path, **kwargs):
         full_path = self._fullpath(relative_path)
         with sftp(self.collection) as client:
-            file_data = client.open(full_path, "r")
-            data = file_data.read()
-            file_data.close()
-        return data
+            with client.open(full_path, "r") as file_data:
+                return file_data.read()
 
     def list(self, relative_path):
         full_path = self._fullpath(relative_path)
