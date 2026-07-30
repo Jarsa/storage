@@ -48,13 +48,13 @@ class SftpCase(CommonCase, BackendStorageTestMixin):
         # not found
         exc.errno = errno.ENOENT
         client.stat.side_effect = exc
-        fakefile = open("/tmp/fakefile.txt", "w+b")
-        client.open.return_value = fakefile
-        self.backend.add("fake/path", b"fake data")
-        # mkdirs has been called
-        mocked_mkdirs.assert_called()
-        # file has been written and closed
-        self.assertTrue(fakefile.closed)
+        with open("/tmp/fakefile.txt", "w+b") as fakefile:
+            client.open.return_value = fakefile
+            self.backend.add("fake/path", b"fake data")
+            # mkdirs has been called
+            mocked_mkdirs.assert_called()
+            # file has been written and closed
+            self.assertTrue(fakefile.closed)
         with open("/tmp/fakefile.txt") as thefile:
             self.assertEqual(thefile.read(), "fake data")
 
@@ -63,8 +63,9 @@ class SftpCase(CommonCase, BackendStorageTestMixin):
         client = mocked_paramiko.SFTPClient.from_transport()
         with open("/tmp/fakefile2.txt", "w+b") as fakefile:
             fakefile.write(b"filecontent")
-        client.open.return_value = open("/tmp/fakefile2.txt")
-        self.assertEqual(self.backend.get("fake/path"), "filecontent")
+        with open("/tmp/fakefile2.txt") as reading_file:
+            client.open.return_value = reading_file
+            self.assertEqual(self.backend.get("fake/path"), "filecontent")
 
     @mock.patch(PARAMIKO_PATH)
     def test_list(self, mocked_paramiko):

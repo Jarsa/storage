@@ -100,8 +100,7 @@ class SFTPStorageBackendAdapter(Component):
                 if e.errno == errno.ENOENT:
                     # The path do not exist return an empty list
                     return []
-                else:
-                    raise  # pragma: no cover
+                raise  # pragma: no cover
 
     def move_files(self, files, destination_path):
         _logger.debug("mv %s %s", files, destination_path)
